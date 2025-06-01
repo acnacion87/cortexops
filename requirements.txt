@@ -1,0 +1,23 @@
+numpy==1.26.4
+packaging==24.0
+
+# Use .env files for env variables
+python-dotenv
+
+# LangChain
+langchain
+langchain-community
+
+# For Chat interface
+chainlit
+
+# Ollama LLM Wrapper
+ollama
+
+# Hugging Face datasets + embeddings
+datasets
+huggingface_hub==0.25.2
+sentence-transformers==2.2.2
+
+# Vector Database
+faiss-cpu
