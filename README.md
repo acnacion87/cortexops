@@ -1,6 +1,12 @@
-# Agentic RAG Incident Resolution Assistant
+# CortexOps
+⚠️ This is a proof of concept and is not production-ready. Use at your own risk.
 
-The **Agentic RAG Incident Resolution Assistant** is designed to significantly accelerate and enhance the process of resolving IT incidents. By leveraging existing organizational knowledge from past incidents and documentation, combined with advanced AI reasoning, the system provides IT support teams with rapid, contextually relevant resolution recommendations upon receiving new incident reports.
+This project is authored by Arjay Nacion and may be freely used or modified by Myridius, provided attribution is retained.
+
+## Description
+Smart incident resolution powered by AI
+
+Designed to significantly accelerate and enhance the process of resolving IT incidents. By leveraging existing organizational knowledge from past incidents and documentation, combined with advanced AI reasoning, the system provides IT support teams with rapid, contextually relevant resolution recommendations upon receiving new incident reports.
 
 ## How it Works:
 The system operates through a combination of scheduled data ingestion and real-time incident processing:
