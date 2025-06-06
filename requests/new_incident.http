@@ -1,0 +1,8 @@
+POST http://localhost:8000/incident HTTP/1.1
+content-type: application/json
+
+{
+    "id": "INC56789",
+    "title": "Application not sent e-Frame",
+    "description": "Unable to view application info on e-Frame after boarding."
+}
