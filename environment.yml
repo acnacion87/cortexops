@@ -1,0 +1,25 @@
+name: cortexops
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - python-dotenv
+  - pip
+  - pip:
+      - numpy==1.26.4
+      - packaging==24.0
+      - langchain
+      - langchain-community
+      - chainlit
+      - ollama
+      - faiss-cpu
+      - datasets
+      - huggingface_hub==0.25.2
+      - sentence-transformers==2.2.2
+      - InstructorEmbedding
+      - fastapi
+      - redis
+      - uvicorn
+      - openai
+      - trulens

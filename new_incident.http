@@ -1,0 +1,8 @@
+POST http://localhost:8000/incident HTTP/1.1
+content-type: application/json
+
+{
+    "number": "INC45721",
+    "short_description": "Document generation failure",
+    "description": "Merchant agreement PDF not generated after e-sign."
+}

@@ -12,6 +12,14 @@ As we don't have access to live Service Now and Confluence instance containing l
 4. Fixed RAG Chain where past incidents and related documents are searched provided with the prompt to LLM
 5. Ollama (using Llama3.2:3b) for local testing using a lightweight model.
 
+## Updates after June 06 presentation
+1. Regenerated synthetic incidents and documentations using OpenAI gpt-3.5-turbo model.
+2. Pushed synthetic incidents and documentations datasets to HuggingFace Hub
+3. Rebuilt FAISS index using the new datasets
+4. Refactored prompts.
+5. Implemented callback handler to log events during RAG Chain processing.
+6. Fixed query provided to the chain during invocation to match the same query used with instructor embedding
+
 # DRAFT 2
 Planned for June 25, 2025
 
