@@ -8,6 +8,7 @@ python-dotenv
 langchain
 langchain-community
 langchain-ollama
+langchain-huggingface
 
 # For Chat interface
 chainlit
@@ -18,7 +19,7 @@ ollama
 # Hugging Face datasets + embeddings
 datasets
 huggingface_hub==0.25.2
-sentence-transformers==2.2.2
+sentence-transformers
 InstructorEmbedding
 
 # Vector Database
@@ -33,3 +34,7 @@ redis
 openai
 
 trulens
+trulens-apps-langchain
+trulens-providers-litellm
+trulens-providers-openai
+litellm

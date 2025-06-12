@@ -2,7 +2,7 @@ POST http://localhost:8000/incident HTTP/1.1
 content-type: application/json
 
 {
-    "number": "INC45721",
-    "short_description": "Document generation failure",
-    "description": "Merchant agreement PDF not generated after e-sign."
+    "number": "INC89234",
+    "short_description": "Equipment installation fee validation errors blocking merchant onboarding",
+    "description": "Sales Agents are unable to complete merchant onboarding due to validation errors in the equipment installation fee calculation. The system is rejecting valid fee amounts and showing 'Invalid fee structure' error messages. This is affecting all new merchant applications where equipment installation is required. The validation appears to be incorrectly applying business rules for fee caps and regional variations. Agents have reported that even standard fee amounts are being rejected, causing significant delays in the onboarding process."
 }

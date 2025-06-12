@@ -4,18 +4,25 @@
 This project is authored by Arjay Nacion and may be freely used or modified by Myridius, provided attribution is retained.
 
 ## Description
-Smart incident resolution powered by AI
+Smart incident resolution powered by AI, using synthetic data for demonstration purposes.
 
-Designed to significantly accelerate and enhance the process of resolving IT incidents. By leveraging existing organizational knowledge from past incidents and documentation, combined with advanced AI reasoning, the system provides IT support teams with rapid, contextually relevant resolution recommendations upon receiving new incident reports.
+Designed to demonstrate how AI can accelerate and enhance the process of resolving IT incidents. The system uses synthetically generated incident data and documentation to simulate a real-world environment. By leveraging AI-generated knowledge from past incidents and documentation, combined with advanced AI reasoning, the system provides IT support teams with rapid, contextually relevant resolution recommendations upon receiving new incident reports.
 
 ## How it Works:
-The system operates through a combination of scheduled data ingestion and real-time incident processing:
+The system operates through a combination of synthetic data generation and real-time incident processing:
 
-1. **Knowledge Base Creation**: A scheduled Ingest service reads data from ServiceNow (past incidents) and Confluence (documentation). This information is processed and transformed into a searchable format, stored as vector embeddings in a FAISS database, creating a comprehensive knowledge base.
-2. **Real-time Incident Notification**: When a new incident is created in ServiceNow, a webhook triggers a FastAPI service. This service immediately publishes a notification about the new incident to a Redis Pub/Sub channel.
-3. **User Alerting**: The Chainlit user interface, subscribed to Redis, receives the new incident notification in real-time. It alerts the user to the new incident and provides an option (an "Analyze" button) to initiate the resolution analysis.
-4. **AI-Powered Analysis (RAG Chain)**: When the user requests analysis, the RAG Chain component is activated. It queries the FAISS vector database to retrieve the most similar past incidents and relevant documentation chunks. This retrieved context is then provided to a Large Language Model (LLM), hosted by Ollama (using Llama3.2:3b), along with the details of the new incident. The LLM processes this information to generate a recommended resolution.
-5. **Resolution Delivery**: The generated resolution is returned by the RAG Chain and displayed to the user within the Chainlit UI.
+1. **Synthetic Data Generation**: The system uses AI to generate realistic synthetic incidents and documentation that mimic real-world IT support scenarios. This includes:
+   - Synthetic ServiceNow incidents with realistic descriptions, categories, and resolutions
+   - Synthetic Confluence documentation with troubleshooting steps and best practices
+   - All data is generated to represent common and edge-case scenarios in a Merchant Onboarding system
+
+2. **Knowledge Base Creation**: The synthetic data is processed into vector embeddings stored in a FAISS database, creating a searchable knowledge base that simulates a real-world knowledge repository.
+
+3. **Incident Processing**: New synthetic incidents can be submitted via HTTP POST requests to the system. The Chainlit interface receives these incidents and provides an option to analyze them.
+
+4. **AI-Powered Analysis (RAG Chain)**: When analysis is requested, the RAG Chain queries the FAISS vector database to retrieve similar synthetic incidents and relevant documentation. This context is provided to a Large Language Model (LLM), hosted by Ollama (using phi3.5), along with the new incident details. The LLM generates a recommended resolution.
+
+5. **Resolution Delivery**: The generated resolution is displayed to the user within the Chainlit UI, with real-time streaming of the response.
 
 ## Tools
 1. Ollama - for running LLMs locally
@@ -26,84 +33,106 @@ The system operates through a combination of scheduled data ingestion and real-t
 6. FastAPI - a modern, high-performance web framework for building APIs with Python.
 7. Redis - an open-source, in-memory data structure server, meaning it's primarily used as a database, cache, or message broker. 
 
+## Data Generation
+The system uses two main scripts for synthetic data generation:
+
+1. **synthesize_tickets.py**: Generates realistic synthetic IT support tickets that mimic real ServiceNow incidents. These tickets include:
+   - Various incident types (common and edge cases)
+   - Realistic descriptions and resolutions
+   - Different urgency and impact levels
+   - Different categories and assignment groups
+
+2. **synthesize_docs.py**: Creates synthetic Confluence-style documentation that includes:
+   - Troubleshooting guides
+   - Best practices
+   - Investigation steps
+   - Tool recommendations
+
+All synthetic data is designed to represent realistic scenarios in a Merchant Onboarding system, including:
+- Sales Agent portal issues
+- Merchant portal problems
+- Payment processing errors
+- Equipment installation issues
+- Document generation problems
+- Validation and compliance errors
+
 ## Architecture
 
-```
-+----------------+     +----------------+
-|    ServiceNow  |     |   Confluence   |
-| (Incident Sys) |     | (Documentation)|
-+----------------+     +----------------+
-        |                      |
-        | (Read Incidents)     | (Read Docs)
-        v                      v
-+----------------------------+
-|       Ingest Service       |
-| (Scheduled Indexing)       |
-+----------------------------+
-        |
-        | (Index & Store Vectors)
-        v
-+----------------------------+
-|       FAISS Vector DB      |
-| (Incident/Doc Embeddings)  |
-+----------------------------+
-
-
-+----------------+     +----------------+
-|    ServiceNow  |     |    FastAPI     |
-| (New Incident) |<--->|   (Webhook     |
-|                |     |   Receiver)    |
-+----------------+     +----------------+
-        |                      |
-        | (Webhook -           | (Publish New
-        |  New Incident)       |  Incident)
-        v                      v
-+----------------------------+
-|      Redis Pub/Sub         |
-| (Incoming Incident Queue)  |
-+----------------------------+
-        |
-        | (Subscribe & Receive)
-        v
-+----------------------------+
-|        Chainlit UI         |
-|    (User Interface)        |
-+----------------------------+
-        |
-        | (User Interaction /
-        |  Trigger Analysis)
-        v
-+----------------------------+
-|         RAG Chain          |
-|  (Retrieval & Generation)  |
-+----------------------------+
-        |          ^
-        | (Vector  | (Search
-        |  Search) |  Results)
-        v          |
-+----------------+     +----------------+
-| FAISS Vector DB|<--->| Ollama (Llama) |
-| (Incident/Doc  |     |   (Inference)  |
-| Embeddings)    |     +----------------+
-+----------------+          ^
-        ^                   | (Query /
-        |                   |  Resolution)
-        +-------------------+
-
+```mermaid
+graph TB
+    %% External Systems
+    ServiceNow[ServiceNow<br/>Incident System]
+    Confluence[Confluence<br/>Documentation]
+    
+    %% Data Processing
+    Ingest[Ingest Script<br/>Vector Embedding Creation]
+    
+    %% Storage
+    FAISS[(FAISS Vector DB<br/>Incident/Doc Embeddings)]
+    
+    %% User Interface
+    Chainlit[Chainlit UI<br/>User Interface]
+    
+    %% AI Components
+    RAG[RAG Chain<br/>Retrieval & Generation]
+    Ollama[Ollama<br/>phi3.5 Model]
+    
+    %% User
+    User((User))
+    
+    %% Connections
+    ServiceNow -->|Read Incidents| Ingest
+    Confluence -->|Read Docs| Ingest
+    Ingest -->|Store Vectors| FAISS
+    FAISS -->|Vector Search| RAG
+    Chainlit -->|User Interaction| RAG
+    RAG -->|Query LLM| Ollama
+    Ollama -->|Search Results| FAISS
+    User -->|Submit/Analyze| Chainlit
+    
+    %% Styling - Theme neutral colors
+    classDef external fill:#e6f3ff,stroke:#0066cc,stroke-width:2px,color:#000
+    classDef process fill:#fff2e6,stroke:#cc6600,stroke-width:2px,color:#000
+    classDef storage fill:#e6ffe6,stroke:#006600,stroke-width:2px,color:#000
+    classDef ui fill:#ffe6e6,stroke:#cc0000,stroke-width:2px,color:#000
+    classDef ai fill:#f2e6ff,stroke:#6600cc,stroke-width:2px,color:#000
+    classDef user fill:#f5f5f5,stroke:#666666,stroke-width:2px,color:#000
+    
+    class ServiceNow,Confluence external
+    class Ingest process
+    class FAISS storage
+    class Chainlit ui
+    class RAG,Ollama ai
+    class User user
 ```
 
 **Explanation of Components and Flow:**
 
-1.  **ServiceNow & Confluence:** These are external source systems containing the raw data (incidents and documentation).
-2.  **Ingest Service:** This service periodically reads data from ServiceNow and Confluence. It processes this data (e.g., cleaning, chunking) and creates vector embeddings, which are then stored in the FAISS database. This is the offline/scheduled part of the system, building the knowledge base for RAG.
-3.  **FAISS Vector DB:** A specialized database optimized for storing and searching vector embeddings. It serves as the knowledge base for the RAG Chain, holding the indexed data from ServiceNow (past incidents) and Confluence (documentation).
-4.  **FastAPI Service:** This service acts as the real-time entry point for new incidents. It receives webhooks directly from ServiceNow whenever a new incident is created. Upon receiving a webhook, it processes the notification and publishes a message about the new incident to Redis.
-5.  **Redis Pub/Sub:** Redis is used as a message broker. The FastAPI service *publishes* notifications for new incidents to a specific channel. The Chainlit UI *subscribes* to this channel to be instantly notified when a new incident arrives. It also acts as temporary storage for the incoming incident details until Chainlit picks it up.
-6.  **Chainlit UI:** The user interface of the system. It maintains a persistent connection (via subscription) to Redis. When it receives a new incident notification, it updates the user interface to inform the user and presents an "Analyze" action. When the user clicks "Analyze", Chainlit orchestrates the resolution process by calling the RAG Chain.
-7.  **RAG Chain:** This is the core logic orchestrating the retrieval and generation process.
-    *   It takes the new incident details as input.
-    *   It queries the **FAISS Vector DB** to find similar past incidents and relevant documentation chunks based on their vector similarity.
-    *   It combines the retrieved information (the context) with the new incident details and a prompt for the LLM.
-    *   It sends this combined prompt to the **Ollama** service.
-8.  **Ollama (Llama3.2:3b):** This service hosts the large language model (Llama3.2:3b). It receives the prompt and context from the RAG Chain and generates a recommended resolution or analysis based on the provided information.
-9.  **User:** The end-user interacting with the Chainlit UI to receive notifications and trigger the analysis process.
+1. **ServiceNow & Confluence:** External source systems containing the raw data (incidents and documentation).
+2. **Ingest Script:** Processes data from ServiceNow and Confluence, creates vector embeddings, and stores them in the FAISS database.
+3. **FAISS Vector DB:** Stores vector embeddings of incidents and documentation for similarity search.
+4. **Chainlit UI:** The user interface that:
+   - Receives new incidents via HTTP POST
+   - Presents an "Analyze" action to users
+   - Displays the AI-generated resolution with real-time streaming
+5. **RAG Chain:** Core logic that:
+   - Takes incident details as input
+   - Queries the FAISS Vector DB for similar incidents and documentation
+   - Combines retrieved information with the incident details
+   - Sends the prompt to Ollama
+6. **Ollama (phi3.5):** Hosts the language model that generates resolution recommendations.
+7. **User:** Interacts with the Chainlit UI to submit and analyze incidents.
+
+## Current Limitations
+- The system is currently a proof of concept
+- Uses synthetic data for demonstration purposes
+- Webhook integration with ServiceNow is not implemented
+- Redis Pub/Sub for real-time notifications is not implemented
+- The system uses a simple HTTP endpoint for incident submission
+
+## Future Enhancements
+- Integration with real ServiceNow and Confluence systems
+- Implementation of real-time webhook notifications
+- Addition of real-world incident data
+- Enhanced validation and error handling
+- Production-grade security measures

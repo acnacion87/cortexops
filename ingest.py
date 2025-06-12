@@ -2,21 +2,19 @@ import os
 from dotenv import load_dotenv
 from datasets import load_dataset
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceInstructEmbeddings
-from langchain.docstore.document import Document
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_core.documents import Document
+from typing import List
 
-load_dotenv()
-INCIDENTS_DATASET_HF_REPO_ID = os.getenv("INCIDENTS_DATASET_HF_REPO_ID")
-CONFLUENCE_DATASET_HF_REPO_ID = os.getenv("CONFLUENCE_DATASET_HF_REPO_ID")
-INDEX_PATH = os.getenv("INDEX_PATH")
 
-# Load Dataset from Hugging Face
-print(f'Loading synthetic dataset for customer support tickets: {INCIDENTS_DATASET_HF_REPO_ID}')
-
-documents = []
 # Preprocess synthetic tickets dataset to LangChain Documents
 def tickets_dataset_to_documents():
+    INCIDENTS_DATASET_HF_REPO_ID = os.getenv("INCIDENTS_DATASET_HF_REPO_ID")
+
+    print(f'Loading synthetic dataset for customer support tickets: {INCIDENTS_DATASET_HF_REPO_ID}')
     tickets_dataset = load_dataset(INCIDENTS_DATASET_HF_REPO_ID)
+
+    docs = []
     for item in tickets_dataset["train"]:
         number = (item.get("number") or "").strip()
         short_desc = (item.get("short_description") or "").strip()
@@ -33,13 +31,19 @@ def tickets_dataset_to_documents():
             "source": "ServiceNow",
             "short_description": short_desc
         }
-        documents.append(Document(page_content=content, metadata=metadata))
-    print(f"Prepared customer support tickets for indexing.")
+        docs.append(Document(page_content=content, metadata=metadata))
+    print(f"Prepared {len(docs)} incident tickets for indexing.")
 
-print(f'Loading synthetic dataset for documentations: {CONFLUENCE_DATASET_HF_REPO_ID}')
-# Preprocess synthetic documents dataset to LangChain Documents
+    return docs
+
+# Preprocess synthetic documentations dataset to LangChain Documents
 def docs_dataset_to_documents():
+    CONFLUENCE_DATASET_HF_REPO_ID = os.getenv("CONFLUENCE_DATASET_HF_REPO_ID")
+
+    print(f'Loading synthetic dataset for documentations: {CONFLUENCE_DATASET_HF_REPO_ID}')
     docs_dataset = load_dataset(CONFLUENCE_DATASET_HF_REPO_ID)
+
+    docs = []
     for item in docs_dataset["train"]:
         url = (item.get("url") or "").strip()
         title = (item.get("title") or "").strip()
@@ -54,31 +58,45 @@ def docs_dataset_to_documents():
             "url": url,
             "title": title
         }
-        documents.append(Document(page_content=content, metadata=metadata))
-    print(f"Prepared documentations for indexing.")
+        docs.append(Document(page_content=content, metadata=metadata))
+    print(f"Prepared {len(docs)} documentations for indexing.")
 
-def build_faiss_index(indexPath):
-    embed_model = HuggingFaceInstructEmbeddings(
+    return docs
+
+def build_faiss_index(documents: List[Document]):
+    INDEX_PATH = os.getenv("INDEX_PATH")
+
+    embed_instruction = (
+        "Represent the Merchant Onboarding System incident report or technical "
+        "knowledge base article for retrieval, aiming to find relevant resolution "
+        "steps and troubleshooting steps:"
+    )
+
+    embed_model = HuggingFaceEmbeddings(
         model_name="hkunlp/instructor-base",
         model_kwargs = {'device': 'cpu'},
-        encode_kwargs = {'normalize_embeddings': True},
-        query_instruction="Represent the ServiceNow issue ticket:",
-        embed_instruction="Represent the past incident ticket and resolution:")
+        encode_kwargs = {'normalize_embeddings': True}
+    )
+    
+    instructed_docs = [Document(
+        page_content=f"{embed_instruction}{doc.page_content}",
+        metadata=doc.metadata) for doc in documents]
     
     print("Creating FAISS Index...")
-    vector_store = FAISS.from_documents(documents, embed_model)
+    vector_store = FAISS.from_documents(instructed_docs, embed_model)
 
-    print(f"Saving FAISS index to: {indexPath}")
-    vector_store.save_local(indexPath)
+    print(f"Saving FAISS index to: {INDEX_PATH}")
+    vector_store.save_local(INDEX_PATH)
 
     print("Done! Document embeddings are ready for RAG.")
 
+if __name__ == "__main__":
+    load_dotenv()
 
-tickets_dataset_to_documents()
-docs_dataset_to_documents()
-
-build_faiss_index(INDEX_PATH)
-
+    documents = []
+    documents.extend(tickets_dataset_to_documents())
+    documents.extend(docs_dataset_to_documents())
+    build_faiss_index(documents)
 
 
 

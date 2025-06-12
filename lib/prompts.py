@@ -1,4 +1,3 @@
-
 GENERATE_SYNTHETIC_INCIDENTS_OLLAMA_PROMPT = """
     Generate {count} a synthetic IT support ticket as a valid JSON array.
     Each ticket should represent an issue in a Merchant Onboarding Application used by Sales Agents or Merchants.
@@ -129,51 +128,27 @@ GENERATE_SYNTHETIC_INCIDENTS_OPENAI_PROMPT = """
     Do not include any markdown, code blocks, or commentary—only return the raw JSON array.
 """
 
-RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_PROMPT = """
-You are a senior IT support engineer with expertise in diagnosing system issues using only provided incident logs and documentation.
+RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_ZERO_SHOT_PROMPT = """
+You are an IT support engineer. Your task is to help resolve system issues using the provided incident logs and documentation.
 
-You will be given:
-- A current incident description.
-- A set of relevant past incidents and documentation.
+Given:
+1. A current incident description
+2. Relevant past incidents and documentation from the knowledge base
 
-These are the only materials available. **Do not make assumptions beyond the given information.**
-
----
-
-## Context
-The following documents and/or past incidents are retrieved from a knowledge base:
+Context from knowledge base:
 {context}
 
----
-
-## Current Incident
+Current incident to resolve:
 {input}
 
----
+Instructions:
+1. Look for similar past incidents or documentation in the provided context
+2. If you find relevant information, use it to suggest steps to resolve the current incident
+3. If you find matching documentation, include its URL in your response
 
-## Internal Guidance (for reasoning only — do NOT include these in your final response)
+Your response should be:
+1. A numbered list of steps to investigate and resolve the issue
+2. If you found relevant documentation, add a "References" section with the exact URL
 
-Think step-by-step:
-1. Analyze the incident details.
-2. Search the provided context for similar incidents (metadata.source = "ServiceNow").
-3. If a match is found, infer the likely root cause and what worked previously.
-4. Also look for relevant documentation (metadata.source = "Confluence").
-5. Only if you find a **clear match in the context**, list the document title and URL under "References".
-6. If no matches are found, state that no similar incidents or documentation were provided.
-
----
-
-## Final Output
-
-Respond **only** with:
-- A **numbered list** of realistic steps to investigate and resolve the issue based on past incidents or documentation.
-- A **References** section (if applicable), using exact `url` fields from the context. **Do not make up URLs.**
-
-**Do NOT include your reasoning or the step-by-step process above in the response.**
-
-Example:
-
-**References:**
-- [Handling Merchant Login Errors](https://confluence.company.net/docs/merchant-login-errors)
-
+Keep your response focused on practical steps. Do not include explanations or reasoning.
 """

@@ -5,26 +5,31 @@ from shared.state import pop_item
 import asyncio
 import itertools
 
-from lib.prompts import RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_PROMPT
-from lib.logger import RagChainLogger
+
+from lib.prompts import RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_ZERO_SHOT_PROMPT
 
 from langchain.callbacks.streaming_aiter import AsyncIteratorCallbackHandler
-from langchain_core.runnables import RunnableConfig
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceInstructEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
 
-from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import PromptTemplate
+
+from trulens.core import TruSession
+from trulens.apps.app import TruApp
+from trulens.dashboard import run_dashboard
+
+from rag import IncidentRAGApp
+from feedback import create_feedback_functions
 
 load_dotenv()
 INDEX_PATH = os.getenv("INDEX_PATH")
 
-embedding_model = HuggingFaceInstructEmbeddings(
+embedding_model = HuggingFaceEmbeddings(
     model_name="hkunlp/instructor-base",
     model_kwargs = {'device': 'cpu'},
-    query_instruction="Represent the ServiceNow issue ticket:")
+    encode_kwargs={'normalize_embeddings': True})
 
 db = FAISS.load_local(INDEX_PATH, embedding_model, allow_dangerous_deserialization=True)
 retriever = db.as_retriever(
@@ -33,10 +38,37 @@ retriever = db.as_retriever(
 
 prompt = PromptTemplate(
     input_variables=['context', 'input'],
-    template=RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_PROMPT)
+    template=RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_ZERO_SHOT_PROMPT)
 
-chainLogger = RagChainLogger()
-config = RunnableConfig(callbacks=[chainLogger])
+session = TruSession()
+    
+llm = ChatOllama(
+    temperature=0.7,
+    model="phi3.5",
+    num_thread=4,
+    streaming=True,
+)
+
+combine_docs_chain = create_stuff_documents_chain(llm=llm, prompt=prompt)
+incident_rag_app = IncidentRAGApp(retriever, combine_docs_chain)
+
+feedback_functions = create_feedback_functions()
+tru_recorder = TruApp(
+    app=incident_rag_app,
+    app_name="CortexOps",
+    app_version="1.0.0-Draft",
+    metadata={
+        "type": "RAG",
+        "retriever": "faiss",
+        "embedding_model": "hkunlp/instructor-base",
+        "index_style": "single-index",
+        "rag_chain": "stuff_documents_chain",
+        "prompt_style": "Zero-shot",
+        "inference_model": "Ollama/phi3.5",
+        "feedback_model": "OpenAI/gpt-4o-mini"
+    },
+    feedbacks=feedback_functions,
+)
 
 async def animate_processing(msg: cl.Message, base_text="🔎 Analyzing incident", delay=0.5):
     """Animate a loading message by updating its content with dots."""
@@ -53,24 +85,14 @@ async def process_incident(res):
         animation_task = asyncio.create_task(animate_processing(processing_msg))
         
         cb = AsyncIteratorCallbackHandler()
-        llm = ChatOllama(
-            temperature=0.7,
-            num_thread=4,
-            model="llama3.2",
-            streaming=True,
-            callbacks=[cb]
-        )
-
-        combine_docs_chain = create_stuff_documents_chain(llm=llm, prompt=prompt)
-        retrieval_chain = create_retrieval_chain(retriever, combine_docs_chain)
+        llm.callbacks = [cb]
 
         incident = res.get("payload")
-        query = f"Represent the ServiceNow issue ticket: Short Description: {incident.get('short_description')}\nDescription: {incident.get('description')}"
+        query = f"Short Description: {incident.get('short_description')}\nDescription: {incident.get('description')}"
 
         # Prepare streaming message
         first_token_received = False
-        msg = cl.Message(content="")
-
+        msg = cl.Message(author="assistant", content="")
         # Run chain and stream results
         async def consume():
             nonlocal first_token_received
@@ -84,10 +106,11 @@ async def process_incident(res):
             if first_token_received:
                 await msg.update()
 
-        await asyncio.gather(
-            retrieval_chain.ainvoke({"input": query}, config=config),
-            consume()
-        )
+        async with tru_recorder as recorder:
+            await asyncio.gather(
+                incident_rag_app.full_chain({"input": query}),
+                consume()
+            )
     finally:
         animation_task.cancel()  # Stop animated loading
         try:
@@ -97,7 +120,9 @@ async def process_incident(res):
 
 @cl.on_chat_start
 async def on_chat_start():
-    await cl.Message(content="⏳ Waiting for a new incident...").send()
+    await cl.Message(author="assistant", content="⏳ Waiting for a new incident...").send()
+
+    run_dashboard(session, port=8003)
 
     while True:
         item = pop_item()
@@ -115,12 +140,12 @@ async def on_chat_start():
                     cl.Action(name="ignore", payload=payload, label="❌ Ignore")
                 ]).send()
             if (res.get("name") == "ignore"):
-                await cl.Message(f"⚠️ Issue {res.get('payload').get('short_description')} was ignored...").send()
+                await cl.Message(author="assistant", content=f"⚠️ Issue {res.get('payload').get('short_description')} was ignored...").send()
                 continue
             else:
                 await process_incident(res)
                 
-                await cl.Message(content="⏳ Waiting for a new incident...").send()
+                await cl.Message(author="assistant", content="⏳ Waiting for a new incident...").send()
                 continue
         else:
             await asyncio.sleep(1)  # Wait before polling again
