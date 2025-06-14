@@ -13,12 +13,16 @@ As we don't have access to live Service Now and Confluence instance containing l
 5. Ollama (using Llama3.2:3b) for local testing using a lightweight model.
 
 ## Updates after June 06 presentation
-1. Regenerated synthetic incidents and documentations using OpenAI gpt-3.5-turbo model.
+1. Regenerated synthetic incidents and documentations using OpenAI gpt-3.5-turbo model
 2. Pushed synthetic incidents and documentations datasets to HuggingFace Hub
 3. Rebuilt FAISS index using the new datasets
-4. Refactored prompts.
-5. Implemented callback handler to log events during RAG Chain processing.
+4. Refactored prompts to improve response quality and relevance
+5. Implemented callback handler to log events during RAG Chain processing for better observability
 6. Fixed query provided to the chain during invocation to match the same query used with instructor embedding
+7. Implemented basic error handling and retry mechanisms for the RAG chain
+8. Added logging and monitoring capabilities to track chain performance
+9. Updated the Chainlit UI to display processing status and intermediate results
+10. Integrated basic evaluation metrics to measure response quality
 
 # DRAFT 2
 Planned for June 25, 2025

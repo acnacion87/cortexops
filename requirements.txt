@@ -38,3 +38,5 @@ trulens-apps-langchain
 trulens-providers-litellm
 trulens-providers-openai
 litellm
+
+sdv

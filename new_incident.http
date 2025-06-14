@@ -2,7 +2,7 @@ POST http://localhost:8000/incident HTTP/1.1
 content-type: application/json
 
 {
-    "number": "INC89234",
-    "short_description": "Equipment installation fee validation errors blocking merchant onboarding",
-    "description": "Sales Agents are unable to complete merchant onboarding due to validation errors in the equipment installation fee calculation. The system is rejecting valid fee amounts and showing 'Invalid fee structure' error messages. This is affecting all new merchant applications where equipment installation is required. The validation appears to be incorrectly applying business rules for fee caps and regional variations. Agents have reported that even standard fee amounts are being rejected, causing significant delays in the onboarding process."
+    "number": "INC89237",
+    "short_description": "Merchant Agreement e-signing blocked by access permission error",
+    "description": "Merchants are unable to complete the onboarding process due to an access permission error preventing them from electronically signing the Merchant Agreement. The e-signing interface displays an access denied error message when merchants attempt to sign the agreement, effectively blocking the entire onboarding workflow. This issue appears to be affecting all new merchant applications regardless of their browser or device type. The access permission error occurs specifically at the e-signing step, preventing merchants from proceeding with their account activation. This is causing significant delays in merchant onboarding and potential loss of business opportunities. Initial investigation suggests this might be related to either incorrect permission settings in the e-signing module or a misconfiguration in the merchant onboarding workflow."
 }

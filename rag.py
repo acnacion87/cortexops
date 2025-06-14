@@ -12,7 +12,6 @@ class IncidentRAGApp:
         self.combine_docs_chain = combine_docs_chain
         self.config = RunnableConfig(callbacks=[RagChainLogger()])
 
-
     @instrument
     async def retrieve(self, query):
         return await self.retriever.ainvoke(f"{IncidentRAGApp.QUERY_INSTRUCTION}{query}", config=self.config)

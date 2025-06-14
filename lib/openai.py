@@ -1,12 +1,16 @@
 import json
 import re
 import time
+import logging
 
 from openai import OpenAI
 from dotenv import load_dotenv
 
 OPENAI_MODEL = "gpt-3.5-turbo"
 MAX_RETRIES = 3
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('[OpenAI]')
 
 load_dotenv()
 
@@ -17,16 +21,20 @@ def clean_json_text(text):
     text = re.sub(r"```(?:json)?\s*", "", text)
     return text.replace("```", "").strip()
 
-def query_openai_json(prompt, temperature=0.7, max_tokens=1024, model=None):
+def query_openai_json(prompt, system_prompt=None, temperature=0.7, max_tokens=1024, model=None):
     model = model or OPENAI_MODEL
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
+            messages = [
+                {"role": "user", "content": prompt}
+            ]
+            if (system_prompt):
+                messages.insert(0, {"role": "system", "content": system_prompt})
+
             response = client.chat.completions.create(
                 model=model,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
+                messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens
             )
@@ -35,11 +43,11 @@ def query_openai_json(prompt, temperature=0.7, max_tokens=1024, model=None):
             return json.loads(clean)
 
         except json.JSONDecodeError as e:
-            print(f"[WARN] JSON parsing failed (attempt {attempt}): {e}")
+            logger.warning("JSON parsing failed (attempt %d): %s", attempt, e)
             if attempt == MAX_RETRIES:
                 raise
-            print("[INFO] Retrying after 2 seconds...")
+            logger.info("Retrying after 2 seconds...")
             time.sleep(2)
         except Exception as e:
-            print(f"[ERROR] OpenAI API failed: {e}")
+            logger.error("OpenAI API failed: %s", e)
             raise
