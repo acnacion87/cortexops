@@ -20,7 +20,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 
 # Preprocess synthetic tickets dataset to LangChain Documents
-def tickets_dataset_to_documents():
+def incidents_dataset_to_documents():
     INCIDENTS_DATASET_HF_REPO_ID = os.getenv("INCIDENTS_DATASET_HF_REPO_ID")
 
     logger.info("Loding synthetic dataset for customer support tickets: %s", INCIDENTS_DATASET_HF_REPO_ID)
@@ -65,6 +65,7 @@ def kb_dataset_to_documents():
         # Combine content for embedding
         content = f"{short_description}\n\n{text}"
         metadata = {
+            "type": "knowledge_base",
             "number": item["number"],
             "category": item["category"],
             "knowledge_base": item["kb_knowledge_base"],
@@ -77,40 +78,45 @@ def kb_dataset_to_documents():
 
     return docs
 
-def build_faiss_index(documents: List[Document]):
-    INDEX_PATH = os.getenv("INDEX_PATH")
-
-    embed_instruction = (
-        "Represent the Merchant Onboarding System incident report or technical "
-        "knowledge base article for retrieval, aiming to find relevant resolution "
-        "steps and troubleshooting steps"
-    )
-
-    embed_model = get_embedding_model()
-    
+def build_instructed_documents(embed_instruction: str, documents: List[Document]):
     instructed_docs = [Document(
         page_content=f"{embed_instruction}:{doc.page_content}",
         metadata=doc.metadata) for doc in documents]
-    
+    return instructed_docs
+
+def build_faiss_index(indexPath: str, embed_instruction: str, embed_model: HuggingFaceEmbeddings, documents: List[Document]):
+    instructed_docs = build_instructed_documents(embed_instruction, documents)
     docs = text_splitter.split_documents(instructed_docs)
 
-    print("Creating FAISS Index...")
+    logger.info("Creating FAISS Index...")
     vector_store = FAISS.from_documents(docs, embed_model)
 
-    print(f"Saving FAISS index to: {INDEX_PATH}")
-    vector_store.save_local(INDEX_PATH)
+    logger.info("Saving FAISS index to: %s", indexPath)
+    vector_store.save_local(indexPath)
 
-    print("Done! Document embeddings are ready for RAG.")
+    logger.info("Done! %s index ready for RAG.", indexPath)
+
+def build_incidents_index(embed_model: HuggingFaceEmbeddings):
+    incidents_docs = incidents_dataset_to_documents()
+
+    embed_instruction = "Represent the Merchant Onboarding System incident report for retrieval, aiming to find relevant resolution steps and troubleshooting steps"
+    build_faiss_index(os.getenv("INCIDENTS_INDEX_PATH"), embed_instruction, embed_model, incidents_docs)
+
+def build_kb_index(embed_model: HuggingFaceEmbeddings):
+    kb_docs = kb_dataset_to_documents()
+
+    embed_instruction = "Represent the ServiceNow Knowledge Base article for retrieval, aiming to find relevant resolution steps and troubleshooting steps"
+    build_faiss_index(os.getenv("KNOWLEDGE_BASE_INDEX_PATH"), embed_instruction, embed_model, kb_docs)
 
 if __name__ == "__main__":
     logger.info("Starting ingestion process...")
 
     load_dotenv()
 
-    documents = []
-    documents.extend(tickets_dataset_to_documents())
-    documents.extend(kb_dataset_to_documents())
-    build_faiss_index(documents)
+    embedding_model = get_embedding_model()
+
+    build_incidents_index(embedding_model)
+    build_kb_index(embedding_model)
 
 
 

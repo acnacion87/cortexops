@@ -1,13 +1,15 @@
+from typing import Any
 from trulens.core.instruments import instrument
 from lib.logger import RagChainLogger
-from langchain_core.runnables import RunnableConfig
+from langchain_core.runnables import Runnable,RunnableConfig
+from langchain_core.vectorstores import VectorStoreRetriever
 
 class IncidentRAGApp:
     QUERY_INSTRUCTION = (
         "Represent the new Merchant Onboarding System incident report "
         "to find the most relevant resolution steps and troubleshooting steps:")
 
-    def __init__(self, retriever, combine_docs_chain):
+    def __init__(self, retriever: VectorStoreRetriever, combine_docs_chain: Runnable[dict[str, Any], Any]):
         self.retriever = retriever
         self.combine_docs_chain = combine_docs_chain
         self.config = RunnableConfig(callbacks=[RagChainLogger()])

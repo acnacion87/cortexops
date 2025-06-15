@@ -1,36 +1,47 @@
 # Welcome to CortexOps! 🚀🤖
 
-Welcome to CortexOps, an AI-powered incident resolution system! This application helps IT support teams by providing rapid, contextually relevant resolution recommendations for new incident reports.
+Hi there! 👋 Welcome to CortexOps, a smart incident resolution system powered by AI. This system helps IT support teams quickly resolve incidents by leveraging AI-generated knowledge from past incidents and documentation.
 
-## How It Works 🔧
+## About CortexOps
 
-1. When a new incident ticket is raised, you'll be notified and given the option to analyze or ignore it.
-2. If you choose to analyze, our AI system will:
-   - Search through past incidents and documentation
-   - Generate relevant resolution recommendations
-   - Stream the response in real-time
+CortexOps is a proof-of-concept AI assistant that:
+- Analyzes new incident tickets in real-time
+- Searches through past incidents and documentation
+- Provides contextually relevant resolution recommendations
+- Uses synthetic data for demonstration purposes
 
-## Features ✨
+## Current Features
 
-- **Smart Analysis**: Uses RAG (Retrieval Augmented Generation) to find similar past incidents and relevant documentation
-- **Real-time Streaming**: Watch the AI's thought process as it analyzes incidents
-- **Interactive UI**: Choose to analyze or ignore new incidents as they come in
-- **Quality Monitoring**: Evaluates response quality and relevance using TruLens
+- 🔍 Real-time incident analysis
+- 📚 Knowledge base search using FAISS vector database
+- 🤖 AI-powered resolution recommendations using Ollama (phi3:mini)
+- 📊 Performance monitoring with TruLens
+- 💬 Interactive chat interface with Chainlit
 
-## Note 📝
+## System Status
 
-This is a proof of concept using synthetic data for demonstration purposes. The system currently uses:
-- Ollama (phi3:mini) for local inference
-- FAISS for vector similarity search
-- Redis as a message broker
+⚠️ **Note**: This is a proof of concept and is not production-ready. The system currently:
+- Uses synthetic data for demonstration
+- Runs on a local LLM deployment
+- Implements basic RAG chain without agentic capabilities
+- Uses polling-based Redis implementation
 
-## Getting Help 🔗
+## Getting Started
 
-- **Documentation**: For technical details, check out our [GitHub Repository](https://github.com/arjaynacion/agentic-rag-support)
-- **Issues**: Found a bug? Have a suggestion? [Open an issue](https://github.com/arjaynacion/agentic-rag-support/issues)
+1. Wait for a new incident to be raised
+2. When an incident arrives, you'll see a notification
+3. Click "🧠 Analyze" to get AI-powered resolution recommendations
+4. Review the recommendations and suggested next steps
 
-Let's make incident resolution smarter and faster! 💪
+## Technical Details
 
-## Welcome screen
+- **Version**: 2.0.0
+- **RAG Implementation**: FAISS vector store with instructor-base embeddings
+- **Inference Model**: Ollama/phi3:mini
+- **Feedback Model**: OpenAI/gpt-4-mini
+- **UI Framework**: Chainlit
+- **API Framework**: FastAPI
+- **Vector Database**: FAISS
+- **Message Broker**: Redis
 
-To modify the welcome screen, edit the `chainlit.md` file at the root of your project. If you do not want a welcome screen, just leave this file empty.
+Happy incident resolution! 🎯✨

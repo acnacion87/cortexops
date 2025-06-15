@@ -1,8 +1,20 @@
 import numpy as np
 
 from trulens.core import Feedback,Select
-
+from trulens.apps.app import TruApp
 from trulens.providers.openai import OpenAI
+
+from tru_app_meta import APP_METADATA, APP_VERSION
+
+def create_tru_app(ragApp):
+    feedback_functions = create_feedback_functions()
+    return TruApp(
+        app=ragApp,
+        app_name="CortexOps",
+        app_version=APP_VERSION,
+        metadata=APP_METADATA,
+        feedbacks=feedback_functions,
+    )
 
 def create_feedback_functions(provider = None):
     provider = provider or OpenAI(model_engine="gpt-4o-mini")
