@@ -16,13 +16,14 @@ Smart incident resolution powered by AI, using synthetic data for demonstration 
 
 3. **Incident Processing**: HTTP POST endpoint receives new incidents for analysis
 
-4. **AI-Powered Analysis**: RAG Chain with Ollama (phi3:mini) for inference and feedback:
-   - Retrieves similar incidents and documentation from FAISS
-   - Generates resolution recommendations
+4. **AI-Powered Analysis**: Agent-based system with OpenAI (gpt-4o-mini) for inference and feedback:
+   - Validates query relevance to Merchant Onboarding System
+   - Uses tools to search incidents and knowledge base
+   - Generates resolution recommendations with conversation memory
    - Real-time streaming via Chainlit UI
 
 ## Tools
-- Ollama (phi3:mini) - Local LLM for inference and feedback
+- OpenAI (gpt-4o-mini) - LLM for inference and feedback
 - SDV - Synthetic data generation
 - LangChain - LLM application framework
 - Chainlit - Chatbot UI framework
@@ -49,8 +50,9 @@ graph TB
     Chainlit[Chainlit UI<br/>User Interface]
     
     %% AI Components
-    RAG[RAG Chain<br/>Retrieval & Generation]
-    Ollama[Ollama<br/>phi3:mini Model]
+    Agent[Agent<br/>Query Validation & Tools]
+    Tools[Tools<br/>Search & Validation]
+    OpenAI[OpenAI<br/>gpt-4o-mini Model]
     TruLens[TruLens<br/>Monitoring & Evaluation]
     
     %% User
@@ -59,14 +61,17 @@ graph TB
     %% Connections
     SDV -->|Generate Data| Ingest
     Ingest -->|Store Vectors| FAISS
-    FAISS -->|Vector Search| RAG
-    Chainlit -->|User Interaction| RAG
-    RAG -->|Query LLM| Ollama
-    Ollama -->|Search Results| FAISS
+    FAISS -->|Vector Search| Tools
+    Chainlit -->|User Interaction| Agent
+    Agent -->|Use Tools| Tools
+    Agent -->|Validate Query| OpenAI
+    Tools -->|Search Knowledge| FAISS
+    OpenAI -->|Search Results| FAISS
     User -->|Submit/Analyze| Chainlit
     Chainlit -->|Poll| Redis
-    RAG -->|Monitor| TruLens
-    Ollama -->|Evaluate| TruLens
+    Agent -->|Monitor| TruLens
+    Tools -->|Monitor| TruLens
+    OpenAI -->|Evaluate| TruLens
     
     %% Styling
     classDef external fill:#e6f3ff,stroke:#0066cc,stroke-width:2px,color:#000
@@ -80,7 +85,7 @@ graph TB
     class Ingest process
     class FAISS,Redis storage
     class Chainlit ui
-    class RAG,Ollama,TruLens ai
+    class Agent,Tools,OpenAI,TruLens ai
     class User user
 ```
 
@@ -94,11 +99,11 @@ The system uses TruLens for comprehensive monitoring and evaluation of the RAG p
 ## Current Limitations
 - Proof of concept using synthetic data
 - Polling-based Redis implementation
-- Basic RAG chain without agentic capabilities
-- Local LLM deployment
+- OpenAI API dependency
+- Basic agent implementation with query validation
 
 ## Future Enhancements
-- Agentic RAG implementation
 - Redis Pub/Sub integration
 - Production-grade security
-- Cloud-based LLM deployment
+- Cloud-based deployment
+- Enhanced agentic capabilities
