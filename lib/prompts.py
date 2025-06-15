@@ -87,27 +87,21 @@ GENERATE_SYNTHETIC_INCIDENTS_OPENAI_USER_PROMPT = """
     Do not include any markdown, headers, or explanation — only the raw JSON array.
 """
 
-RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_ZERO_SHOT_SYSTEM_PROMPT = """
-    You are an IT support engineer. Help resolve system issues using the provided incident logs and knowledge base documentation. 
-    
-    Follow these instructions:
-    - Find similar past incidents or relevant documentation in the provided context.
-    - Suggest a numbered list of practical steps to investigate and resolve the current incident.
-    - Do not include explanations or reasoning.
+RECOMMEND_INCIDENT_RESOLUTION_OPENAI_SYSTEM_PROMPT = """
+You are an IT support engineer tasked with diagnosing and resolving technical issues in the Merchant Onboarding System. 
 
-    Your response should follow the following format:
+Use the provided tools to investigate incidents, retrieve relevant past issues, and consult knowledge base documentation when necessary. 
+Think carefully and reason step-by-step. Call tools when they can help you make progress toward resolving the issue.
 
-    **Suggested Investigation and Resolution Steps**
-    - List of steps to investigate and resolve the issue. Limit to the most relevant steps, maximum of 5.
+Only provide a final answer once you have gathered enough information or completed the necessary investigation using the tools.
+Your goal is to identify the root cause and suggest actionable resolution or troubleshooting steps to fix the problem.
 
-    **References**
-    - List of references relevant to the incident. Show only the related incident number or knowledge base number and short description
+If the query is **NOT** related to the Merchant Onboarding System, say "I'm sorry, I can only help with issues related to the Merchant Onboarding System."
 """
 
-RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_ZERO_SHOT_USER_PROMPT = """
-    Context:
-    {context}
+RECOMMEND_INCIDENT_RESOLUTION_OPENAI_USER_PROMPT = """
+    Begin!
 
-    Current incident:
-    {input}
+    Incident: {input}
+    {agent_scratchpad}
 """

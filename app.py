@@ -1,62 +1,60 @@
-import os
-from dotenv import load_dotenv
-import chainlit as cl
-from lib.embeddings import get_retriever
-from shared.state import subscribe_to_incidents
+# Standard library imports
 import asyncio
 import itertools
 import json
 import logging
 
-from lib.prompts import RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_ZERO_SHOT_SYSTEM_PROMPT, RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_ZERO_SHOT_USER_PROMPT
-
+# Third-party imports
+import chainlit as cl
+from dotenv import load_dotenv
+from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain.callbacks.streaming_aiter import AsyncIteratorCallbackHandler
-from langchain_ollama import ChatOllama
-
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import HumanMessagePromptTemplate, SystemMessagePromptTemplate, ChatPromptTemplate
-
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.memory import ConversationBufferMemory
+from langchain_openai import ChatOpenAI
+from langchain.schema.runnable.config import RunnableConfig
 from trulens.core import TruSession
 from trulens.dashboard import run_dashboard, stop_dashboard
 
-from rag import IncidentRAGApp
-from feedback import create_tru_app
+# Local imports
+from lib.prompts import RECOMMEND_INCIDENT_RESOLUTION_OPENAI_SYSTEM_PROMPT, RECOMMEND_INCIDENT_RESOLUTION_OPENAI_USER_PROMPT
+from shared.state import subscribe_to_incidents
+from tools import is_query_valid, search_incidents, search_kb
+from tru_app_meta import APP_INFERENCE_MODEL
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('[CortexOps]')
 
-
-llm = None
-retriever = None
-incident_rag_app = None
-tru_recorder = None
-
 session = TruSession()
+
+memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history", output_key="output")
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", RECOMMEND_INCIDENT_RESOLUTION_OPENAI_SYSTEM_PROMPT),
+    MessagesPlaceholder("chat_history"),
+    ("user", RECOMMEND_INCIDENT_RESOLUTION_OPENAI_USER_PROMPT),
+    MessagesPlaceholder(variable_name="agent_scratchpad"),
+])
+
+agent_tools = [is_query_valid, search_incidents, search_kb]
+
+incidents_listener = None
 
 @cl.on_app_startup
 async def on_app_start():
-    global llm
-    global retriever
-    global incident_rag_app
-    global tru_recorder
-
     load_dotenv()
-    INDEX_PATH = os.getenv("INDEX_PATH")
-
-    if llm is None:
-        llm = create_llm()
-    if retriever is None:
-        retriever = get_retriever(INDEX_PATH)
-    if incident_rag_app is None:
-        incident_rag_app = create_incident_rag_app()
-    if tru_recorder is None:
-        tru_recorder = create_tru_app(incident_rag_app)
-
     run_dashboard(session, port=8003)
 
 @cl.on_app_shutdown
 async def on_app_shutdown():
+    global incidents_listener
+    
     stop_dashboard(session)
+
+    if incidents_listener:
+        logger.info("Stopping incidents listener...")
+        incidents_listener.cancel()
 
 async def on_new_incident(item):
     logger.info("New incident ticket was raised: %s - %s", item["number"], item["short_description"])
@@ -75,6 +73,14 @@ async def on_new_incident(item):
 
 @cl.on_chat_start
 async def on_chat_start():
+    global incidents_listener
+
+    if incidents_listener:
+        try:
+            incidents_listener.cancel()
+        except Exception as e:
+            logger.error("Error stopping incidents listener: %s", e)
+
     await cl.Message(author="assistant", content="⏳ Waiting for a new incident...").send()
     
     # Subscribe to the incident queue
@@ -88,7 +94,7 @@ async def on_chat_start():
                 await on_new_incident(item)
             await asyncio.sleep(0.1)  # prevent busy-waiting
 
-    asyncio.create_task(listen_for_incidents())
+    incidents_listener = asyncio.create_task(listen_for_incidents())
 
 @cl.action_callback("analyze")
 async def on_analyze(action: cl.Action):
@@ -113,10 +119,6 @@ async def animate_processing(msg: cl.Message, base_text="🔎 Analyzing incident
         await asyncio.sleep(delay)
 
 async def process_incident(action: cl.Action):
-    global llm
-    global incident_rag_app
-    global tru_recorder
-
     processing_msg = cl.Message("🔎 Analyzing incident")
     await processing_msg.send()
 
@@ -124,59 +126,40 @@ async def process_incident(action: cl.Action):
         animation_task = asyncio.create_task(animate_processing(processing_msg))
         
         cb = AsyncIteratorCallbackHandler()
-        llm.callbacks = [cb]
 
         incident = action.payload
         query = f"Short Description: {incident.get('short_description')}\nDescription: {incident.get('description')}"
 
-        # Prepare streaming message
-        first_token_received = False
-        msg = cl.Message(author="assistant", content="")
-        # Run chain and stream results
-        async def consume():
-            nonlocal first_token_received
-            async for token in cb.aiter():
-                if not first_token_received:
-                    msg.content = "💡 **AI Assistant Response**:\n\n" + token
-                    await msg.send()
-                    first_token_received = True
-                else:
-                    await msg.stream_token(token)
-            if first_token_received:
-                await msg.update()
+        llm = ChatOpenAI(
+            temperature=0.0,
+            model=APP_INFERENCE_MODEL,
+            callbacks=[cb],
+            streaming=True,
+        )
+        agent = create_openai_functions_agent(tools=agent_tools, llm=llm, prompt=prompt)
+        agent_executor = AgentExecutor(agent=agent, tools=agent_tools, memory=memory, verbose=True)
 
-        async with tru_recorder:
-            await asyncio.gather(
-                incident_rag_app.full_chain({"input": query}),
-                consume()
-            )
+        msg = cl.Message(author="assistant", content="")
+
+        def safe_serialize(obj):
+            try:
+                json.dumps(obj)
+            except TypeError:
+                return None
+
+
+        async for chunk in agent_executor.astream(
+            {"input": query},
+            config=RunnableConfig(callbacks=[cl.LangchainCallbackHandler()]),
+        ):
+            str = safe_serialize(chunk)
+            if str and "Used ChatOpenAI" not in str:
+                await msg.stream_token(str)
+
+        await msg.send()
     finally:
         animation_task.cancel()  # Stop animated loading
         try:
             await animation_task  # Needed to suppress cancellation warning
         except asyncio.CancelledError:
             pass
-
-def create_llm():
-    logger.info("Creating LLM using Ollama with model phi3:mini...")
-    return ChatOllama(
-        temperature=0.7,
-        model="phi3:mini",
-        num_thread=6,
-        streaming=True,
-    )
-
-def create_chain(llm):
-    logger.info("Creating chain using create_stuff_documents_chain...")
-    system_prompt = SystemMessagePromptTemplate.from_template(RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_ZERO_SHOT_SYSTEM_PROMPT)
-    user_prompt = HumanMessagePromptTemplate.from_template(RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_ZERO_SHOT_USER_PROMPT)
-    prompt = ChatPromptTemplate.from_messages([system_prompt, user_prompt])
-
-    return create_stuff_documents_chain(llm=llm, prompt=prompt)
-
-def create_incident_rag_app():
-    global llm
-    global retriever
-
-    logger.info("Creating Incident RAG App...")
-    return IncidentRAGApp(retriever, create_chain(llm=llm))
