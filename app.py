@@ -7,8 +7,7 @@ import logging
 # Third-party imports
 import chainlit as cl
 from dotenv import load_dotenv
-from langchain.agents import AgentExecutor, create_openai_functions_agent
-from langchain.callbacks.streaming_aiter import AsyncIteratorCallbackHandler
+from langchain.agents import AgentType, initialize_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
@@ -17,6 +16,7 @@ from trulens.core import TruSession
 from trulens.dashboard import run_dashboard, stop_dashboard
 
 # Local imports
+from feedback import create_tru_chain
 from lib.prompts import RECOMMEND_INCIDENT_RESOLUTION_OPENAI_SYSTEM_PROMPT, RECOMMEND_INCIDENT_RESOLUTION_OPENAI_USER_PROMPT
 from shared.state import subscribe_to_incidents
 from tools import is_query_valid, search_incidents, search_kb
@@ -27,6 +27,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('[CortexOps]')
 
 session = TruSession()
+session.reset_database()
 
 memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history", output_key="output")
 
@@ -37,9 +38,17 @@ prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="agent_scratchpad"),
 ])
 
-agent_tools = [is_query_valid, search_incidents, search_kb]
-
 incidents_listener = None
+
+agent_tools = [is_query_valid, search_incidents, search_kb]
+llm = ChatOpenAI(
+    temperature=0.0,
+    model=APP_INFERENCE_MODEL,
+    streaming=True,
+)
+agent = initialize_agent(tools=agent_tools, llm=llm, prompt=prompt, agent=AgentType.OPENAI_FUNCTIONS)
+tru_recorder = create_tru_chain(agent)
+
 
 @cl.on_app_startup
 async def on_app_start():
@@ -125,38 +134,14 @@ async def process_incident(action: cl.Action):
     try:
         animation_task = asyncio.create_task(animate_processing(processing_msg))
         
-        cb = AsyncIteratorCallbackHandler()
-
         incident = action.payload
         query = f"Short Description: {incident.get('short_description')}\nDescription: {incident.get('description')}"
 
-        llm = ChatOpenAI(
-            temperature=0.0,
-            model=APP_INFERENCE_MODEL,
-            callbacks=[cb],
-            streaming=True,
-        )
-        agent = create_openai_functions_agent(tools=agent_tools, llm=llm, prompt=prompt)
-        agent_executor = AgentExecutor(agent=agent, tools=agent_tools, memory=memory, verbose=True)
+        async with tru_recorder as recorder:
+            await agent.ainvoke({"input": query}, config=RunnableConfig(callbacks=[cl.LangchainCallbackHandler()]))
 
-        msg = cl.Message(author="assistant", content="")
-
-        def safe_serialize(obj):
-            try:
-                json.dumps(obj)
-            except TypeError:
-                return None
-
-
-        async for chunk in agent_executor.astream(
-            {"input": query},
-            config=RunnableConfig(callbacks=[cl.LangchainCallbackHandler()]),
-        ):
-            str = safe_serialize(chunk)
-            if str and "Used ChatOpenAI" not in str:
-                await msg.stream_token(str)
-
-        await msg.send()
+            record = recorder.get()
+            print(record)
     finally:
         animation_task.cancel()  # Stop animated loading
         try:
