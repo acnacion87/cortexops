@@ -1,13 +1,35 @@
-# Welcome to Chainlit! 🚀🤖
+# Welcome to CortexOps! 🚀🤖
 
-Hi there, Developer! 👋 We're excited to have you on board. Chainlit is a powerful tool designed to help you prototype, debug and share applications built on top of LLMs.
+Welcome to CortexOps, an AI-powered incident resolution system! This application helps IT support teams by providing rapid, contextually relevant resolution recommendations for new incident reports.
 
-## Useful Links 🔗
+## How It Works 🔧
 
-- **Documentation:** Get started with our comprehensive [Chainlit Documentation](https://docs.chainlit.io) 📚
-- **Discord Community:** Join our friendly [Chainlit Discord](https://discord.gg/k73SQ3FyUh) to ask questions, share your projects, and connect with other developers! 💬
+1. When a new incident ticket is raised, you'll be notified and given the option to analyze or ignore it.
+2. If you choose to analyze, our AI system will:
+   - Search through past incidents and documentation
+   - Generate relevant resolution recommendations
+   - Stream the response in real-time
 
-We can't wait to see what you create with Chainlit! Happy coding! 💻😊
+## Features ✨
+
+- **Smart Analysis**: Uses RAG (Retrieval Augmented Generation) to find similar past incidents and relevant documentation
+- **Real-time Streaming**: Watch the AI's thought process as it analyzes incidents
+- **Interactive UI**: Choose to analyze or ignore new incidents as they come in
+- **Quality Monitoring**: Evaluates response quality and relevance using TruLens
+
+## Note 📝
+
+This is a proof of concept using synthetic data for demonstration purposes. The system currently uses:
+- Ollama (phi3:mini) for local inference
+- FAISS for vector similarity search
+- Redis as a message broker
+
+## Getting Help 🔗
+
+- **Documentation**: For technical details, check out our [GitHub Repository](https://github.com/arjaynacion/agentic-rag-support)
+- **Issues**: Found a bug? Have a suggestion? [Open an issue](https://github.com/arjaynacion/agentic-rag-support/issues)
+
+Let's make incident resolution smarter and faster! 💪
 
 ## Welcome screen
 

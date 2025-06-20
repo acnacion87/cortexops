@@ -27,7 +27,7 @@ def create_feedback_functions(provider = None):
         Feedback(
             provider.groundedness_measure_with_cot_reasons, name="Groundedness",
         )
-        .on(Select.RecordCalls.retrieve.rets.collect())
+        .on(Select.RecordCalls.retrieve.rets)
         .on_output()
     )
 

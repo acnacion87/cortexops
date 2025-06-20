@@ -1,8 +1,102 @@
+### Create incident for fee and service updates not reflected
 POST http://localhost:8000/incident HTTP/1.1
 content-type: application/json
 
 {
-    "number": "INC89237",
-    "short_description": "Merchant Agreement e-signing blocked by access permission error",
-    "description": "Merchants are unable to complete the onboarding process due to an access permission error preventing them from electronically signing the Merchant Agreement. The e-signing interface displays an access denied error message when merchants attempt to sign the agreement, effectively blocking the entire onboarding workflow. This issue appears to be affecting all new merchant applications regardless of their browser or device type. The access permission error occurs specifically at the e-signing step, preventing merchants from proceeding with their account activation. This is causing significant delays in merchant onboarding and potential loss of business opportunities. Initial investigation suggests this might be related to either incorrect permission settings in the e-signing module or a misconfiguration in the merchant onboarding workflow."
+    "number": "INC11223",
+    "short_description": "Fee and service updates not reflected for new merchant location",
+    "description": "After setting up the fees and services for a new merchant location, the Sales Agent observed that the updates were not reflected in the system, leading to delays in completing the onboarding process."
+}
+
+### Create incident for Sales UI merchant onboarding issue
+POST http://localhost:8000/incident HTTP/1.1
+content-type: application/json
+
+{
+    "number": "INC12345",
+    "short_description": "Sales UI merchant onboarding form validation failure",
+    "description": "Sales agents are unable to complete merchant onboarding in the Sales UI due to form validation errors. The system is rejecting valid business registration numbers and tax IDs, particularly for merchants with special characters in their business names. This is causing delays in the onboarding process and affecting the sales team's ability to meet their daily targets. The issue appears to be related to recent updates to the input validation rules."
+}
+
+
+### Create incident for equipment and fee configuration issue
+POST http://localhost:8000/incident HTTP/1.1
+content-type: application/json
+
+{
+    "number": "INC67890",
+    "short_description": "Equipment selection and fee configuration mismatch",
+    "description": "Sales agents are reporting discrepancies between selected equipment configurations and the displayed processing fees in the Sales UI. When configuring multiple payment terminals for a merchant, the system is incorrectly calculating the combined service fees and equipment rental costs. This is causing confusion during merchant negotiations and requiring manual fee adjustments, leading to potential revenue loss and customer dissatisfaction."
+}
+
+### Create incident for Customer UI e-signature issue
+POST http://localhost:8000/incident HTTP/1.1
+content-type: application/json
+
+{
+    "number": "INC24680",
+    "short_description": "Merchant Agreement e-signature failure in Customer UI",
+    "description": "Merchants are unable to complete the e-signature process for their Merchant Agreement in the Customer UI. The PDF document loads correctly, but the e-signature component fails to initialize, displaying a 'Signature pad not available' error. This is preventing merchants from completing their onboarding process and causing a backlog of pending agreements. The issue appears to be affecting merchants using specific browser versions and mobile devices."
+}
+
+### Create incident for additional location onboarding
+POST http://localhost:8000/incident HTTP/1.1
+content-type: application/json
+
+{
+    "number": "INC13579",
+    "short_description": "Additional location onboarding data inconsistency",
+    "description": "Sales agents are experiencing issues when adding new locations to existing merchant accounts. The system is not properly inheriting merchant-level configurations to new locations, requiring manual re-entry of business information and payment settings. Additionally, the location hierarchy view is not updating correctly, making it difficult to manage multiple locations under the same merchant ID. This is causing delays in expanding merchant operations."
+}
+
+### Create incident for Partner API onboarding
+POST http://localhost:8000/incident HTTP/1.1
+content-type: application/json
+
+{
+    "number": "INC97531",
+    "short_description": "Partner API merchant onboarding rate limiting",
+    "description": "Partners are experiencing unexpected rate limiting when using the merchant onboarding REST API endpoints. The system is returning 429 Too Many Requests errors even when well below the documented API limits. This is particularly affecting partners during bulk merchant onboarding operations, causing timeouts and failed merchant creation requests. The issue appears to be related to recent changes in the API gateway configuration."
+}
+
+### Incidents totally unrelated to the system
+
+### Create incident for office facilities
+POST http://localhost:8000/incident HTTP/1.1
+content-type: application/json
+
+{
+    "number": "INC86420",
+    "short_description": "Office HVAC system malfunction in Building B",
+    "description": "The HVAC system in Building B has been experiencing intermittent failures, causing temperature fluctuations and poor air circulation. Multiple employees have reported discomfort and some have had to relocate to other floors. The maintenance team has identified a faulty compressor and control system that needs replacement. This is affecting productivity and employee well-being in the affected areas."
+}
+
+### Create incident for HR system
+POST http://localhost:8000/incident HTTP/1.1
+content-type: application/json
+
+{
+    "number": "INC35791",
+    "short_description": "Employee benefits portal access issues",
+    "description": "Employees are unable to access the benefits portal to update their healthcare selections and view their current benefits status. The portal is returning authentication errors and timing out during peak usage hours. This is causing frustration among employees trying to make changes during the open enrollment period. The HR team is receiving an increased volume of support tickets and manual requests."
+}
+
+### Create incident for office operations
+POST http://localhost:8000/incident HTTP/1.1
+content-type: application/json
+
+{
+    "number": "INC80246",
+    "short_description": "Office supply inventory management system failure",
+    "description": "The automated office supply inventory management system has stopped updating stock levels, leading to incorrect inventory counts and delayed reordering. This has resulted in shortages of essential office supplies like printer paper, toner cartridges, and stationery. The manual tracking process is causing delays in fulfilling supply requests and affecting daily operations across all departments."
+}
+
+### Create incident for homemade burger preparation
+POST http://localhost:8000/incident HTTP/1.1
+content-type: application/json
+
+{
+    "number": "INC54321",
+    "short_description": "Homemade burger patty consistency and cooking issues",
+    "description": "Multiple reports of inconsistent burger patty quality during home preparation. Issues include patties falling apart during cooking, uneven cooking temperatures leading to raw centers, and excessive shrinkage during the cooking process. The problem appears to be related to improper meat-to-fat ratio in the ground beef mixture and inadequate binding agents. This is affecting the overall quality of homemade burgers and causing frustration among home cooks. Some attempts to fix the issue by adding breadcrumbs and eggs have resulted in overly dense patties."
 }

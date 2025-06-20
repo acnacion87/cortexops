@@ -144,6 +144,7 @@ async def on_chat_start():
                 await cl.Message(author="assistant", content=f"⚠️ Issue {res.get('payload').get('short_description')} was ignored...").send()
                 continue
             else:
+                await cl.Message(author="assistant", content=f"**{item['number']}** - {item['short_description']}\n\n{item['description']}").send()
                 await process_incident(res)
                 
                 await cl.Message(author="assistant", content="⏳ Waiting for a new incident...").send()
