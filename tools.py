@@ -1,7 +1,18 @@
 import os
 from langchain.tools import tool
-from lib.embeddings import get_retriever
+from lib.embeddings import EMBED_INCIDENT_INSTRUCTION, EMBED_KB_INSTRUCTION, get_retriever
 from lib.openai import query_openai_json
+
+from trulens.apps.langchain import WithFeedbackFilterDocuments
+from trulens.core import Feedback
+from trulens.providers.openai import OpenAI
+
+from tru_app_meta import APP_FEEDBACK_MODEL
+
+provider = OpenAI(model_engine=APP_FEEDBACK_MODEL)
+f_context_relevance_score = Feedback(
+    provider.context_relevance, name="Context Relevance"
+)
 
 QUERY_VALIDATION_SYSTEM_PROMPT = """You are a query validator for the Merchant Onboarding System. Your task is to determine if a given query is valid and relevant to the system's context.
 
@@ -72,12 +83,19 @@ def search_incidents(query: str):
     retriever = get_retriever(index_path = index_path, search_type="similarity_score_threshold",
         search_kwargs={"k": 6, "score_threshold": 0.7})
     
+    filtered_retriever = WithFeedbackFilterDocuments.of_retriever(
+        retriever=retriever, feedback=f_context_relevance_score, threshold=0.75
+    )
+
     query_instruction = (
         "Represent the new Merchant Onboarding System incident report "
         "to find the most relevant resolution steps and troubleshooting steps")
     
-    docs = retriever.invoke(f"{query_instruction}:{query}")
-    return "\n\n".join([doc.page_content for doc in docs])
+    docs = filtered_retriever.invoke(f"{query_instruction}:{query}")
+    if (len(docs) == 0):
+        return None
+    
+    return "\n\n".join([doc.page_content.replace(f"{EMBED_INCIDENT_INSTRUCTION}:", "") for doc in docs])
 
 @tool("search_knowledge_base", description="Use this only if query is valid to search for related knowledge base articles.")
 def search_kb(query: str):
@@ -96,9 +114,15 @@ def search_kb(query: str):
     retriever = get_retriever(index_path = index_path, search_type="mmr",
         search_kwargs={"k": 6, "lambda_mult": 0.7})
     
+    filtered_retriever = WithFeedbackFilterDocuments.of_retriever(
+        retriever=retriever, feedback=f_context_relevance_score, threshold=0.75
+    )
     query_instruction = (
         "Represent the new Merchant Onboarding System incident report to find the most relevant"
         "knowledge base article containing resolution steps and troubleshooting steps")
     
-    docs = retriever.invoke(f"{query_instruction}:{query}")
-    return "\n\n".join([doc.page_content for doc in docs])
+    docs = filtered_retriever.invoke(f"{query_instruction}:{query}")
+    if (len(docs) == 0):
+        return None
+    
+    return "\n\n".join([doc.page_content.replace(f"{EMBED_KB_INSTRUCTION}:", "") for doc in docs])

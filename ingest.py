@@ -7,7 +7,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from typing import List
-from lib.embeddings import get_embedding_model
+from lib.embeddings import EMBED_INCIDENT_INSTRUCTION, EMBED_KB_INSTRUCTION, get_embedding_model
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logging.basicConfig(level=logging.INFO)
@@ -98,15 +98,11 @@ def build_faiss_index(indexPath: str, embed_instruction: str, embed_model: Huggi
 
 def build_incidents_index(embed_model: HuggingFaceEmbeddings):
     incidents_docs = incidents_dataset_to_documents()
-
-    embed_instruction = "Represent the Merchant Onboarding System incident report for retrieval, aiming to find relevant resolution steps and troubleshooting steps"
-    build_faiss_index(os.getenv("INCIDENTS_INDEX_PATH"), embed_instruction, embed_model, incidents_docs)
+    build_faiss_index(os.getenv("INCIDENTS_INDEX_PATH"), EMBED_INCIDENT_INSTRUCTION, embed_model, incidents_docs)
 
 def build_kb_index(embed_model: HuggingFaceEmbeddings):
     kb_docs = kb_dataset_to_documents()
-
-    embed_instruction = "Represent the ServiceNow Knowledge Base article for retrieval, aiming to find relevant resolution steps and troubleshooting steps"
-    build_faiss_index(os.getenv("KNOWLEDGE_BASE_INDEX_PATH"), embed_instruction, embed_model, kb_docs)
+    build_faiss_index(os.getenv("KNOWLEDGE_BASE_INDEX_PATH"), EMBED_KB_INSTRUCTION, embed_model, kb_docs)
 
 if __name__ == "__main__":
     logger.info("Starting ingestion process...")

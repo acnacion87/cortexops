@@ -27,7 +27,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('[CortexOps]')
 
 session = TruSession()
-session.reset_database()
 
 memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history", output_key="output")
 
