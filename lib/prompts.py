@@ -98,7 +98,7 @@ RECOMMEND_INCIDENT_RESOLUTION_OLLAMA_ZERO_SHOT_SYSTEM_PROMPT = """
     Your response should follow the following format:
 
     **Suggested Investigation and Resolution Steps**
-    - List of steps to investigate and resolve the issue. Limit to the most relevant steps.
+    - List of steps to investigate and resolve the issue. Limit to the most relevant steps, maximum of 5.
 
     **References**
     - List of references relevant to the incident. Show only the related incident number or knowledge base number and short description
